@@ -78,7 +78,7 @@ type Config struct {
 	NoDiscovery bool
 
 	DccpEnabled bool
-	DccpNodes   []*discover.Node
+	Nodes   []*discover.Node
 
 	// DiscoveryV5 specifies whether the new topic-discovery based V5 discovery
 	// protocol should be started or not.

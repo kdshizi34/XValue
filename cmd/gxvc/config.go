@@ -80,6 +80,7 @@ type gethConfig struct {
 	Shh       whisper.Config
 	//TODO
 	Dccp      layer2.Config
+	Xp        layer2.Config
 	Node      node.Config
 	Ethstats  ethstatsConfig
 	Dashboard dashboard.Config
@@ -109,7 +110,7 @@ func defaultNodeConfig() node.Config {
 	cfg.HTTPModules = append(cfg.HTTPModules, "lilo", "shh")
 	cfg.WSModules = append(cfg.WSModules, "eth", "shh")
 	cfg.WSModules = append(cfg.WSModules, "xvc", "shh")
-	cfg.IPCPath = "xvc.ipc"
+	cfg.IPCPath = "gxvc.ipc"
 	return cfg
 }
 
@@ -120,6 +121,7 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gethConfig) {
 		Shh:       whisper.DefaultConfig,
 		Node:      defaultNodeConfig(),
 		Dccp:      layer2.DefaultConfig,
+		Xp:        layer2.DefaultConfig,
 		Dashboard: dashboard.DefaultConfig,
 	}
 
@@ -137,7 +139,8 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gethConfig) {
 		utils.Fatalf("Failed to create the protocol stack: %v", err)
 	}
 	utils.SetEthConfig(ctx, stack, &cfg.Eth)
-	cfg.Dccp.DccpNodes = cfg.Node.P2P.DccpNodes
+	cfg.Dccp.Nodes = cfg.Node.P2P.Nodes
+	cfg.Xp.Nodes = cfg.Node.P2P.Nodes
 	if ctx.GlobalIsSet(utils.EthStatsURLFlag.Name) {
 		cfg.Ethstats.URL = ctx.GlobalString(utils.EthStatsURLFlag.Name)
 	}
@@ -189,6 +192,7 @@ func makeFullNode(ctx *cli.Context) *node.Node {
 	//TODO
 	//if ctx.GlobalIsSet(utils.DccpFlag.Name) {
 		utils.RegisterDccpService(stack, &cfg.Dccp)
+		utils.RegisterXpService(stack, &cfg.Xp)
 	//}
 	return stack
 }

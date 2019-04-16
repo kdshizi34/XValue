@@ -1317,14 +1317,23 @@ func RegisterShhService(stack *node.Node, cfg *whisper.Config) {
 	}
 }
 
-//TODO
 // RegisterDccpService configures Dccp and adds it to the given node.
 func RegisterDccpService(stack *node.Node, cfg *layer2.Config) {
 	fmt.Println("====  RegisterDccpService()  ====")
 	if err := stack.Register(func(n *node.ServiceContext) (node.Service, error) {
-		return layer2.New(cfg), nil
+		return layer2.DccpNew(cfg), nil
 	}); err != nil {
 		Fatalf("Failed to register the Dccp service: %v", err)
+	}
+}
+
+// RegisterXpService configures Xp and adds it to the given node.
+func RegisterXpService(stack *node.Node, cfg *layer2.Config) {
+	fmt.Println("====  RegisterXpService()  ====")
+	if err := stack.Register(func(n *node.ServiceContext) (node.Service, error) {
+		return layer2.XpNew(cfg), nil
+	}); err != nil {
+		Fatalf("Failed to register the Xp service: %v", err)
 	}
 }
 

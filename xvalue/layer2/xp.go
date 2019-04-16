@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"time"
 
 	"github.com/xvalue/go-xvalue/log"
 	"github.com/xvalue/go-xvalue/p2p"
@@ -29,87 +28,63 @@ import (
 )
 
 // txs start
-func Dccprotocol_sendToGroup(msg string) string {
-	return discover.SendToGroup(msg, Dccprotocol_type)
+func Xprotocol_sendToGroup(msg string) string {
+	return discover.SendToGroup(msg, Xprotocol_type)
 }
 
 // broadcast
 // to group's nodes
-func Dccprotocol_broadcastToGroup(msg string) {
-	BroadcastToGroup(msg, Dccprotocol_type)
+func Xprotocol_broadcastToGroup(msg string) {
+	BroadcastToGroup(msg, Xprotocol_type)
 }
 
 // unicast
 // to anyone
-func Dccprotocol_sendMsgToNode(toid discover.NodeID, toaddr *net.UDPAddr, msg string) error {
+func Xprotocol_sendMsgToNode(toid discover.NodeID, toaddr *net.UDPAddr, msg string) error {
 	log.Debug("==== SendMsgToNode() ====\n")
 	return discover.SendMsgToNode(toid, toaddr, msg)
 }
 
 // to peers
-func Dccprotocol_sendMsgToPeer(enode string, msg string) error {
+func Xprotocol_sendMsgToPeer(enode string, msg string) error {
 	return sendMsgToPeer(enode, msg)
 }
 
-// callback
-// receive private key
-func Dccprotocol_registerPriKeyCallback(recvPrivkeyFunc func(interface{})) {
-	discover.RegisterPriKeyCallback(recvPrivkeyFunc)
-}
-
 // receive message form peers
-func Dccprotocol_registerCallback(recvDccpFunc func(interface{})) {
-	Dccp_callback = recvDccpFunc
+func Xprotocol_registerCallback(recvXpFunc func(interface{})) {
+	Xp_callback = recvXpFunc
 }
-func Dccp_callEvent(msg string) {
-	Dccp_callback(msg)
+func Xp_callEvent(msg string) {
+	Xp_callback(msg)
 }
 
-// receive message from dccp
-func Dccprotocol_registerMsgCallback(dccpcallback func(interface{}) <-chan string) {
-	discover.RegisterDccpMsgCallback(dccpcallback)
+// receive message from xp
+func Xprotocol_registerMsgCallback(xpcallback func(interface{}) <-chan string) {
+	discover.RegisterXpMsgCallback(xpcallback)
 }
 
 // receive message from dccp result
-func Dccprotocol_registerMsgRetCallback(dccpcallback func(interface{})) {
-	discover.RegisterDccpMsgRetCallback(dccpcallback)
+func Xprotocol_registerMsgRetCallback(xpcallback func(interface{})) {
+	discover.RegisterXpMsgRetCallback(xpcallback)
 }
 
-// get info
-func Dccprotocol_getGroup() (int, string) {
-	return getGroup(Dccprotocol_type)
-}
-
-func (dccp *DccpAPI) Version(ctx context.Context) (v string) {
-	return ProtocolVersionStr
-}
-func (dccp *DccpAPI) Peers(ctx context.Context) []*p2p.PeerInfo {
-	var ps []*p2p.PeerInfo
-	for _, p := range dccp.dccp.peers {
-		ps = append(ps, p.peer.Info())
-	}
-
-	return ps
-}
-
-// Protocols returns the whisper sub-protocols ran by this particular client.
-func (dccp *Dccp) Protocols() []p2p.Protocol {
-	return []p2p.Protocol{dccp.protocol}
+func Xprotocol_getGroup() (int, string) {
+	return getGroup(Xprotocol_type)
 }
 
 // p2p layer 2
 // New creates a Whisper client ready to communicate through the Ethereum P2P network.
-func DccpNew(cfg *Config) *Dccp {
-	log.Debug("====  dccp New  ====\n")
-	dccp := &Dccp{
+func XpNew(cfg *Config) *Xp {
+	log.Debug("====  xp New  ====\n")
+	xp := &Xp{
 		peers: make(map[discover.NodeID]*peer),
 		quit:  make(chan struct{}),
 		cfg:   cfg,
 	}
 
 	// p2p dccp sub protocol handler
-	dccp.protocol = p2p.Protocol{
-		Name:    ProtocolName,
+	xp.protocol = p2p.Protocol{
+		Name:    Xp_ProtocolName,
 		Version: ProtocolVersion,
 		Length:  NumberOfMessageCodes,
 		Run:     HandlePeer,
@@ -126,50 +101,53 @@ func DccpNew(cfg *Config) *Dccp {
 		},
 	}
 
-	return dccp
+	return xp
 }
 
-//TODO callback
-func recvPrivkeyInfo(msg interface{}) {
-	log.Debug("==== recvPrivkeyInfo() ====\n")
-	log.Debug("recvprikey", "msg = ", msg)
-	//TODO
-	//store privatekey slice
-	time.Sleep(time.Duration(10) * time.Second)
-	Dccprotocol_broadcastToGroup("aaaa")
+func Xprotocol_getEnodes() (int, string) {
+	return Xprotocol_getGroup()
+}
+
+
+// Protocols returns the whisper sub-protocols ran by this particular client.
+func (xp *Xp) Protocols() []p2p.Protocol {
+	return []p2p.Protocol{xp.protocol}
 }
 
 // other
 // Start implements node.Service, starting the background data propagation thread
 // of the Whisper protocol.
-func (dccp *Dccp) Start(server *p2p.Server) error {
-	fmt.Println("==== func (dccp *Dccp) Start() ====")
+func (xp *Xp) Start(server *p2p.Server) error {
+	fmt.Println("==== func (xp *Xp) Start() ====")
 	return nil
 }
 
 // Stop implements node.Service, stopping the background data propagation thread
 // of the Whisper protocol.
-func (dccp *Dccp) Stop() error {
+func (xp *Xp) Stop() error {
 	return nil
 }
 
 // APIs returns the RPC descriptors the Whisper implementation offers
-func (dccp *Dccp) APIs() []rpc.API {
+func (xp *Xp) APIs() []rpc.API {
 	return []rpc.API{
 		{
-			Namespace: ProtocolName,
+			Namespace: Xp_ProtocolName,
 			Version:   ProtocolVersionStr,
-			Service:   &DccpAPI{dccp: dccp},
+			Service:   &XpAPI{xp: xp},
 			Public:    true,
 		},
 	}
 }
 
-func SendMsg(msg string) {
-	Dccprotocol_broadcastToGroup(msg)
+func (xp *XpAPI) Version(ctx context.Context) (v string) {
+        return ProtocolVersionStr
 }
+func (xp *XpAPI) Peers(ctx context.Context) []*p2p.PeerInfo {
+        var ps []*p2p.PeerInfo
+        for _, p := range xp.xp.peers {
+                ps = append(ps, p.peer.Info())
+        }
 
-func Dccprotocol_getEnodes() (int, string) {
-	return getGroup(Dccprotocol_type)
+        return ps
 }
-

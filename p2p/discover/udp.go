@@ -590,17 +590,25 @@ func decodePacket(buf []byte) (packet, NodeID, []byte, error) {
 		req = new(findnode)
 	case neighborsPacket:
 		req = new(neighbors)
-	case findgroupPacket:
+	case Dccp_findGroupPacket:
 		req = new(findgroup)
-	case groupPacket:
+	case Xp_findGroupPacket:
+		req = new(findgroup)
+	case Dccp_groupPacket:
 		req = new(group)
-	case DccpGroupPacket:
+	case Xp_groupPacket:
+		req = new(group)
+	case Dccp_groupInfoPacket:
 		req = new(groupmessage)
 	case PeerMsgPacket:
 		req = new(message)
 	case getDccpPacket:
 		req = new(getdccpmessage)
+	case Xp_getXvcPacket:
+		req = new(getdccpmessage)
 	case gotDccpPacket:
+		req = new(dccpmessage)
+	case gotXpPacket:
 		req = new(dccpmessage)
 	default:
 		return nil, fromID, hash, fmt.Errorf("unknown type: %d", ptype)

@@ -28,8 +28,13 @@ import (
 
 //TODO
 const (
-	ProtocolName = "dccp"
-	dccpMsgCode  = 0
+	Dccprotocol_type = discover.Dccprotocol_type
+	Xprotocol_type   = discover.Xprotocol_type
+	ProtocolName     = "dccp"
+	Xp_ProtocolName  = "xp"
+	peerMsgCode      = iota
+	Dccp_msgCode
+	Xp_msgCode
 
 	ProtocolVersion      = 1
 	ProtocolVersionStr   = "1"
@@ -41,8 +46,19 @@ const (
 	broatcastFailOnce  = 2
 )
 
+var (
+	bootNodeIP *net.UDPAddr
+	callback   func(interface{})
+	Dccp_callback   func(interface{})
+	Xp_callback   func(interface{})
+	emitter    *Emitter
+	dccpGroup  *Group
+	xpGroup    *Group
+	selfid     discover.NodeID
+)
+
 type Dccp struct {
-	protocol  p2p.Protocol
+	protocol p2p.Protocol
 	//peers     map[discover.NodeID]*Peer
 	peers     map[discover.NodeID]*peer
 	dccpPeers map[discover.NodeID]bool
@@ -50,26 +66,33 @@ type Dccp struct {
 	quit      chan struct{} // Channel used for graceful exit
 	cfg       *Config
 }
+
+type Xp struct {
+	protocol p2p.Protocol
+	//peers     map[discover.NodeID]*Peer
+	peers     map[discover.NodeID]*peer
+	dccpPeers map[discover.NodeID]bool
+	peerMu    sync.Mutex    // Mutex to sync the active peer set
+	quit      chan struct{} // Channel used for graceful exit
+	cfg       *Config
+}
+
 type Config struct {
-	DccpNodes []*discover.Node
-	DataPath  string
+	Nodes    []*discover.Node
+	DataPath string
 }
 
 var DefaultConfig = Config{
-	DccpNodes: make([]*discover.Node, 0),
+	Nodes: make([]*discover.Node, 0),
 }
 
 type DccpAPI struct {
 	dccp *Dccp
 }
 
-var (
-	bootNodeIP *net.UDPAddr
-	callback   func(interface{})
-	emitter    *Emitter
-	dccpgroup  *Group
-	selfid     discover.NodeID
-)
+type XpAPI struct {
+	xp *Xp
+}
 
 type peerInfo struct {
 	Version int `json:"version"`
@@ -104,4 +127,3 @@ type Transaction struct {
 	Payload []byte
 	Hash    atomic.Value
 }
-

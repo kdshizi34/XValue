@@ -29,7 +29,6 @@ import (
 	"time"
 	//"net"
 
-	"github.com/xvalue/go-xvalue/xvalue/dccp" //TODO
 	"github.com/elastic/gosigar"
 	"github.com/xvalue/go-xvalue/accounts"
 	"github.com/xvalue/go-xvalue/accounts/keystore"
@@ -41,11 +40,16 @@ import (
 	"github.com/xvalue/go-xvalue/log"
 	"github.com/xvalue/go-xvalue/metrics"
 	"github.com/xvalue/go-xvalue/node"
+	"github.com/xvalue/go-xvalue/xvalue/dccp"
 	"gopkg.in/urfave/cli.v1"
+
+	//layer2 test
+	"github.com/xvalue/go-xvalue/xvalue/layer2"
 )
 
 const (
-	clientIdentifier = "xvc" // Client identifier to advertise over the network
+	layer2Test       = false
+	clientIdentifier = "gxvc" // Client identifier to advertise over the network
 )
 
 var (
@@ -156,15 +160,8 @@ var (
 	}
 
 	paillierThresholdFlags = []cli.Flag{
-			cli.IntFlag{Name: "index", Value:0, Usage: "paillier threshold decrept", Destination: &paillier_threshold_index},
-		}
-
-		//+++++++++++TODO++++++++++++
-		//datadirFlags = []cli.Flag{
-		//		cli.StringFlag{Name: "datadir", Value:"", Usage: "data dir", Destination: &datadir},
-		//	}
-
-		//+++++++++++++++end+++++++++++++
+		cli.IntFlag{Name: "index", Value: 0, Usage: "paillier threshold decrept", Destination: &paillier_threshold_index},
+	}
 
 	whisperFlags = []cli.Flag{
 		utils.WhisperEnabledFlag,
@@ -225,7 +222,6 @@ func init() {
 	app.Flags = append(app.Flags, whisperFlags...)
 	app.Flags = append(app.Flags, metricsFlags...)
 	app.Flags = append(app.Flags, paillierThresholdFlags...)
-	//app.Flags = append(app.Flags, datadirFlags...) //TODO
 
 	app.Before = func(ctx *cli.Context) error {
 		runtime.GOMAXPROCS(runtime.NumCPU())
@@ -284,16 +280,20 @@ func geth(ctx *cli.Context) error {
 	if args := ctx.Args(); len(args) > 0 {
 		return fmt.Errorf("invalid command: %q", args[0])
 	}
-	
-	utils.SetDatadir (ctx) //TODO
-	//dccp.RestoreNodeInfo() //TODO
+
+	utils.SetDatadir(ctx)
+	//dccp.RestoreNodeInfo()
 	node := makeFullNode(ctx)
 	startNode(ctx, node)
-	dccp.InitNonDccpChan() //TODO
+	dccp.InitNonDccpChan()
 
-	//TODO: dccp test
-	//fmt.Printf("dccp.StartTest ...\n")
-	//go dccp.StartTest()
+	//layer2 test
+	if layer2Test {
+		fmt.Printf("xvc StartTest ...\n")
+		go layer2.Dccprotocol_startTest()
+		go layer2.Xprotocol_startTest()
+		go layer2.Xvc_startTest()
+	}
 
 	node.Wait()
 	return nil

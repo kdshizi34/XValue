@@ -88,10 +88,10 @@ type transport interface {
 	ping(NodeID, *net.UDPAddr) error
 	findnode(toid NodeID, addr *net.UDPAddr, target NodeID) ([]*Node, error)
 	//TODO: group
-	findgroup(toid NodeID, addr *net.UDPAddr, target NodeID) ([]*Node, error)
-	sendToPeer(toid NodeID, toaddr *net.UDPAddr, msg string) error
+	findgroup(toid NodeID, addr *net.UDPAddr, target NodeID, p2pType int) ([]*Node, error)
+	sendToPeer(toid NodeID, toaddr *net.UDPAddr, msg string, p2pType int) error
 	sendMsgToPeer(toid NodeID, toaddr *net.UDPAddr, msg string) error
-	sendToGroupDCCP(toid NodeID, toaddr *net.UDPAddr, msg string) (string, error)
+	sendToGroupXvc(toid NodeID, toaddr *net.UDPAddr, msg string, p2pType int) (string, error)
 	close()
 }
 

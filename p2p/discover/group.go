@@ -37,27 +37,41 @@ import (
 
 var (
 	setgroup       = 0
-	Dccpdelimiter  = "dccpmsg"
-	grouplist      *group
+	XvcDelimiter   = "xvcmsg"
+	Dccp_groupList *group
+	Xp_groupList   *group
 	tmpdccpmsg     = &getdccpmessage{Number: [3]byte{0, 0, 0}, Msg: ""}
 	setlocaliptrue = false
 	localIP        = "0.0.0.0"
 	changed        = 0
+	Xp_changed     = 0
 )
 
 const (
-	groupnum = 3
+	Dccp_groupMemNum = 3
+	Xp_grouMemNum = 3
+)
 
-	findgroupPacket = iota + 10 + neighborsPacket //14
-	groupPacket
-	DccpGroupPacket
+const (
+	Dccprotocol_type = iota + 1
+	Xprotocol_type
+
+	Dccp_findGroupPacket = iota + 10 + neighborsPacket //14
+	Xp_findGroupPacket
+	Dccp_groupPacket
+	Xp_groupPacket
+	Dccp_groupInfoPacket
 	PeerMsgPacket
 	getDccpPacket
+	Xp_getXvcPacket
+	getXpPacket
 	gotDccpPacket
+	gotXpPacket
 )
 
 type (
 	findgroup struct {
+		P2pType    byte
 		Target     NodeID // doesn't need to be an actual public key
 		Expiration uint64
 		// Ignore additional fields (for forward compatibility).
@@ -69,6 +83,7 @@ type (
 		gname      []string
 		msg        string
 		count      int
+		P2pType    byte
 		Nodes      []rpcNode
 		Expiration uint64
 		// Ignore additional fields (for forward compatibility).
@@ -80,6 +95,7 @@ type (
 		gname      []string
 		msg        string
 		count      int
+		P2pType    byte
 		Nodes      []rpcNode
 		Expiration uint64
 		// Ignore additional fields (for forward compatibility).
@@ -95,6 +111,7 @@ type (
 	getdccpmessage struct {
 		//sync.Mutex
 		Number     [3]byte
+		P2pType    byte
 		Target     NodeID // doesn't need to be an actual public key
 		Msg        string
 		Expiration uint64
@@ -103,6 +120,7 @@ type (
 	dccpmessage struct {
 		//sync.Mutex
 		Target     NodeID // doesn't need to be an actual public key
+		P2pType    byte
 		Msg        string
 		Expiration uint64
 	}
@@ -111,13 +129,86 @@ type (
 func (req *findgroup) name() string { return "FINDGROUP/v4" }
 func (req *group) name() string     { return "GROUP/v4" }
 
+func getGroupList(p2pType int) *group {
+	switch (p2pType) {
+	case Dccprotocol_type:
+		return Dccp_groupList
+	case Xprotocol_type:
+		return Xp_groupList
+	}
+	return nil
+}
+
+func getGroupChange(p2pType int) *int {
+	switch (p2pType) {
+	case Dccprotocol_type:
+		return &changed
+	case Xprotocol_type:
+		return &Xp_changed
+	}
+	return nil
+}
+
+func getXvcPacket(p2pType int) int {
+	switch (p2pType) {
+	case Dccprotocol_type:
+		return getDccpPacket
+	case Xprotocol_type:
+		return Xp_getXvcPacket
+	}
+	return 0
+}
+func getGroupPacket(p2pType int) int {
+	switch (p2pType) {
+	case Dccprotocol_type:
+		return Dccp_groupPacket
+	case Xprotocol_type:
+		return Xp_groupPacket
+	}
+	return 0
+}
+
+func getFindGroupPacket(p2pType int) int {
+	switch (p2pType) {
+	case Dccprotocol_type:
+		return Dccp_findGroupPacket
+	case Xprotocol_type:
+		return Xp_findGroupPacket
+	}
+	return 0
+}
+
+func getGroupMemNum(p2pType int) int {
+	switch (p2pType) {
+	case Dccprotocol_type:
+		return Dccp_groupMemNum
+	case Xprotocol_type:
+		return Xp_grouMemNum
+	}
+	return 0
+}
+
+func getGotPacket(p2pType int) int {
+	switch (p2pType) {
+	case Dccprotocol_type:
+		return gotDccpPacket
+	case Xprotocol_type:
+		return gotXpPacket
+	}
+	return 0
+}
+
 // findgroup sends a findgroup request to the bootnode and waits until
 // the node has sent up to a group.
-func (t *udp) findgroup(toid NodeID, toaddr *net.UDPAddr, target NodeID) ([]*Node, error) {
+func (t *udp) findgroup(toid NodeID, toaddr *net.UDPAddr, target NodeID, p2pType int) ([]*Node, error) {
 	log.Debug("====  (t *udp) findgroup()  ====")
 	nodes := make([]*Node, 0, bucketSize)
 	nreceived := 0
-	errc := t.pending(toid, groupPacket, func(r interface{}) bool {
+	groupPacket := getGroupPacket(p2pType)
+	findgroupPacket := getFindGroupPacket(p2pType)
+	groupMemNum := getGroupMemNum(p2pType)
+
+	errc := t.pending(toid, byte(groupPacket), func(r interface{}) bool {
 		reply := r.(*group)
 		for _, rn := range reply.Nodes {
 			nreceived++
@@ -129,10 +220,11 @@ func (t *udp) findgroup(toid NodeID, toaddr *net.UDPAddr, target NodeID) ([]*Nod
 			nodes = append(nodes, n)
 		}
 		log.Debug("findgroup", "return nodes", nodes)
-		return nreceived >= groupnum
+		return nreceived >= groupMemNum
 	})
 	log.Debug("\nfindgroup, t.send\n")
-	t.send(toaddr, findgroupPacket, &findgroup{
+	t.send(toaddr, byte(findgroupPacket), &findgroup{
+		P2pType:    byte(p2pType),
 		Target:     target,
 		Expiration: uint64(time.Now().Add(expiration).Unix()),
 	})
@@ -155,8 +247,9 @@ func (req *findgroup) handle(t *udp, from *net.UDPAddr, fromID NodeID, mac []byt
 		// (which is a much bigger packet than findnode) to the victim.
 		return errUnknownNode
 	}
-	if p := getGroupInfo(); p != nil {
-		t.send(from, groupPacket, p)
+	groupPacket := getGroupPacket(int(req.P2pType))
+	if p := getGroupInfo(int(req.P2pType)); p != nil {
+		t.send(from, byte(groupPacket), p)
 	}
 	return nil
 }
@@ -167,7 +260,8 @@ func (req *group) handle(t *udp, from *net.UDPAddr, fromID NodeID, mac []byte) e
 	if expired(req.Expiration) {
 		return errExpired
 	}
-	if !t.handleReply(fromID, groupPacket, req) {
+	groupPacket := getGroupPacket(int(req.P2pType))
+	if !t.handleReply(fromID, byte(groupPacket), req) {
 		return errUnsolicitedReply
 	}
 	return nil
@@ -178,19 +272,21 @@ func (req *dccpmessage) name() string    { return "DCCPMSG/v4" }
 
 var number [3]byte
 
-// sendgroup sends to group dccp and waits until
+// sendgroup sends to group dccp and waits til
 // the node has reply.
-func (t *udp) sendToGroupDCCP(toid NodeID, toaddr *net.UDPAddr, msg string) (string, error) {
-	log.Debug("====  (t *udp) sendToGroupDCCP()  ====\n")
+func (t *udp) sendToGroupXvc(toid NodeID, toaddr *net.UDPAddr, msg string, p2pType int) (string, error) {
+	log.Debug("====  (t *udp) sendToGroupXvc()  ====\n")
 	err := errors.New("")
 	retmsg := ""
+	getxvcPacket := getXvcPacket(p2pType)
 	number[0]++
-	log.Debug("sendToGroupDCCP", "send toaddr: ", toaddr)
+	log.Debug("sendToGroupXvc", "send toaddr: ", toaddr)
 	if len(msg) <= 800 {
 		number[1] = 1
 		number[2] = 1
-		_, err = t.send(toaddr, getDccpPacket, &getdccpmessage{
+		_, err = t.send(toaddr, byte(getxvcPacket), &getdccpmessage{
 			Number:     number,
+			P2pType:    byte(p2pType),
 			Msg:        msg,
 			Expiration: uint64(time.Now().Add(expiration).Unix()),
 		})
@@ -198,16 +294,18 @@ func (t *udp) sendToGroupDCCP(toid NodeID, toaddr *net.UDPAddr, msg string) (str
 	} else if len(msg) > 800 && len(msg) < 1600 {
 		number[1] = 1
 		number[2] = 2
-		t.send(toaddr, getDccpPacket, &getdccpmessage{
+		t.send(toaddr, byte(getxvcPacket), &getdccpmessage{
 			Number:     number,
+			P2pType:    byte(p2pType),
 			Msg:        msg[0:800],
 			Expiration: uint64(time.Now().Add(expiration).Unix()),
 		})
 		log.Debug("send", "msg(> 800):", msg)
 		number[1] = 2
 		number[2] = 2
-		_, err = t.send(toaddr, getDccpPacket, &getdccpmessage{
+		_, err = t.send(toaddr, byte(getxvcPacket), &getdccpmessage{
 			Number:     number,
+			P2pType:    byte(p2pType),
 			Msg:        msg[800:],
 			Expiration: uint64(time.Now().Add(expiration).Unix()),
 		})
@@ -265,15 +363,15 @@ func (req *getdccpmessage) handle(t *udp, from *net.UDPAddr, fromID NodeID, mac 
 	}
 
 	go func() {
-		log.Debug("getdccpmessage", "calldccpEvent msg: ", msgp)
-		msgc := calldccpEvent(msgp)
-		log.Debug("getdccpmessage", "calldccpEvent retmsg: ", msgc)
+		log.Debug("getmessage", "callEvent msg: ", msgp)
+		msgc := callMsgEvent(msgp, int(req.P2pType))
+		log.Debug("getmessage", "callEvent retmsg: ", msgc)
 		msg := <-msgc
-		//tmpdccpmsg.Number = [3]byte{}
-		//t.send(from, gotDccpPacket, &getdccpmessage{
-		log.Debug("getdccpmessage", "send(from: ", from, "msg = ", msg)
-		t.send(from, gotDccpPacket, &dccpmessage{
+		log.Debug("getmessage", "send(from: ", from, "msg = ", msg)
+		gotpacket := getGotPacket(int(req.P2pType))
+		t.send(from, byte(gotpacket), &dccpmessage{
 			Target:     fromID,
+			P2pType:    req.P2pType,
 			Msg:        msg,
 			Expiration: uint64(time.Now().Add(expiration).Unix()),
 		})
@@ -291,46 +389,53 @@ func (req *dccpmessage) handle(t *udp, from *net.UDPAddr, fromID NodeID, mac []b
 	//if !t.handleReply(fromID, gotDccpPacket, req) {
 	//	return errUnsolicitedReply
 	//}
-	log.Debug("dccpmessage", "handle, calldccpReturn req.Msg", req.Msg)
-	go calldccpReturn(req.Msg)
+	log.Debug("dccpmessage", "handle, calldReturn req.Msg", req.Msg)
+	go callXvcReturn(req.Msg, int(req.P2pType))
 	return nil
 }
 
-func getGroupInfo() *group {
-	if setgroup == 1 && grouplist.count == groupnum {
-		grouplist.Lock()
-		defer grouplist.Unlock()
-		p := grouplist
+func getGroupInfo(p2pType int) *group {
+	log.Debug("getGroupInfo", "p2pType", p2pType)
+	groupMemNum := getGroupMemNum(p2pType)
+	groupList := getGroupList(p2pType)
+	if setgroup == 1 && groupList.count == groupMemNum {
+		groupList.Lock()
+		defer groupList.Unlock()
+		p := groupList
+		p.P2pType = byte(p2pType)
 		p.Expiration = uint64(time.Now().Add(expiration).Unix())
 		return p
 	}
+	log.Warn("getGroupInfo nil")
 	return nil
 }
 
 func InitGroup() error {
 	log.Debug("==== InitGroup() ====")
 	setgroup = 1
-	grouplist = &group{msg: "xvc", count: 0, Expiration: ^uint64(0)}
+	Dccp_groupList = &group{msg: "xvc", count: 0, Expiration: ^uint64(0)}
+	Xp_groupList = &group{msg: "xvc", count: 0, Expiration: ^uint64(0)}
 	return nil
 }
 
-func SendToDccpGroup(msg string) string {
+func SendToGroup(msg string, p2pType int) string {
 	log.Debug("==== SendToGroup() ====")
 	bn := Table4group.nursery[0]
 	if bn == nil {
-		log.Debug("SendToGroup(), bootnode is nil\n")
+		log.Warn("SendToGroup(), bootnode is nil\n")
 		return ""
 	}
 	ipa := &net.UDPAddr{IP: bn.IP, Port: int(bn.UDP)}
-	g := GetGroup(bn.ID, ipa, bn.ID)
-	if g == nil || len(g) != groupnum {
-		log.Debug("SendToGroup(), group is nil\n")
+	g := GetGroup(bn.ID, ipa, bn.ID, p2pType)
+	groupMemNum := getGroupMemNum(p2pType)
+	if g == nil || len(g) != groupMemNum {
+		log.Warn("SendToGroup(), group is nil\n")
 		return ""
 	}
-	var sent [groupnum + 1]int
+	sent := make ([]int, groupMemNum + 1)
 	ret := ""
-	for i := 1; i <= groupnum; {
-		r := rand.Intn(groupnum)
+	for i := 1; i <= groupMemNum; {
+		r := rand.Intn(groupMemNum)
 		j := 1
 		for ; j < i; j++ {
 			if r+1 == sent[j] {
@@ -342,7 +447,7 @@ func SendToDccpGroup(msg string) string {
 		}
 		sent[i] = r + 1
 		i += 1
-		log.Debug("sendToDccpGroup", "group[", r, "]", g[r])
+		log.Debug("sendToXvcGroup", "group[", r, "]", g[r])
 		n := g[r]
 		ipa = &net.UDPAddr{IP: n.IP, Port: int(n.UDP)}
 		err := Table4group.net.ping(n.ID, ipa)
@@ -350,91 +455,97 @@ func SendToDccpGroup(msg string) string {
 			log.Debug("sendToDccpGroup, err", "group[", r, "]", g[r])
 			continue
 		}
-		ret, err = Table4group.net.sendToGroupDCCP(n.ID, ipa, msg)
+		ret, err = Table4group.net.sendToGroupXvc(n.ID, ipa, msg, p2pType)
 		break
 	}
 	return ret
 }
 
-func GetGroup(id NodeID, addr *net.UDPAddr, target NodeID) []*Node {
+func GetGroup(id NodeID, addr *net.UDPAddr, target NodeID, p2pType int) []*Node {
 	log.Debug("==== GetGroup() ====")
-	g, _ := Table4group.net.findgroup(id, addr, target)
+	g, _ := Table4group.net.findgroup(id, addr, target, p2pType)
 	log.Debug("tab.net.findgroup: %+v", g)
 	return g
 }
 
 func setGroup(n *Node, replace string) {
-	//log.Debug("====================== SetGroup() ====================")
-	if setgroup == 0 || changed == 2 {
+	setGroupXvc(n, replace, Dccprotocol_type)
+	setGroupXvc(n, replace, Xprotocol_type)
+}
+
+func setGroupXvc(n *Node, replace string, p2pType int) {
+	groupList := getGroupList(p2pType)
+	groupChanged := getGroupChange(p2pType)
+	groupMemNum := getGroupMemNum(p2pType)
+	if setgroup == 0 || *groupChanged == 2 {
 		return
 	}
-	grouplist.Lock()
-	defer grouplist.Unlock()
+	groupList.Lock()
+	defer groupList.Unlock()
 	//fmt.Printf("node: %+v, tabal.self: %+v\n", n, Table4group.self)
 	//if n.ID == Table4group.self.ID {
 	//	return
 	//}
 	if replace == "add" {
 		log.Debug("group add")
-		if grouplist.count >= groupnum {
-			grouplist.count = groupnum
+		if groupList.count >= groupMemNum {
+			groupList.count = groupMemNum
 			return
 		}
 		log.Debug("connect", "NodeID", n.ID.String())
 		//if n.ID.String() == "ead5708649f3fb10343a61249ea8509b3d700f1f51270f13ecf889cdf8dafce5e7eb649df3ee872fb027b5a136e17de73965ec34c46ea8a5553b3e3150a0bf8d" ||
 		//	n.ID.String() == "bd6e097bb40944bce309f6348fe4d56ee46edbdf128cc75517df3cc586755737733c722d3279a3f37d000e26b5348c9ec9af7f5b83122d4cfd8c9ad836a0e1ee" ||
 		//	n.ID.String() == "1520992e0053bbb92179e7683b3637ea0d43bb2cd3694a94a1e90e909108421c2ce22e0abdb0a335efdd8e6391eb08ba967f641b42e4ebde39997c8ad000e8c8" {
-		//grouplist.gname = append(grouplist.gname, "dddddddddd")
-		grouplist.Nodes = append(grouplist.Nodes, nodeToRPC(n))
-		grouplist.count++
-		if changed == 0 {
-			changed = 1
+		//groupList.gname = append(groupList.gname, "dddddddddd")
+		groupList.Nodes = append(groupList.Nodes, nodeToRPC(n))
+		groupList.count++
+		if *groupChanged == 0 {
+			*groupChanged = 1
 		}
 		log.Debug("group(add)", "node", n)
-		log.Debug("group", "grouplist", grouplist)
+		log.Debug("group", "groupList", groupList)
 		//}
 	} else if replace == "remove" {
 		log.Debug("group remove")
-		if grouplist.count <= 0 {
-			grouplist.count = 0
+		if groupList.count <= 0 {
+			groupList.count = 0
 			return
 		}
 		log.Debug("connect", "NodeID", n.ID.String())
-		for i := 0; i < grouplist.count; i++ {
-			if grouplist.Nodes[i].ID == n.ID {
-				grouplist.Nodes = append(grouplist.Nodes[:i], grouplist.Nodes[i+1:]...)
-				grouplist.count--
-				if changed == 0 {
-					changed = 1
+		for i := 0; i < groupList.count; i++ {
+			if groupList.Nodes[i].ID == n.ID {
+				groupList.Nodes = append(groupList.Nodes[:i], groupList.Nodes[i+1:]...)
+				groupList.count--
+				if *groupChanged == 0 {
+					*groupChanged = 1
 				}
 				log.Debug("group(remove)", "node", n)
-				log.Debug("group", "grouplist", grouplist)
+				log.Debug("group", "groupList", groupList)
 				break
 			}
 		}
 	}
-	if grouplist.count == groupnum && changed == 1 {
+	if groupList.count == groupMemNum && *groupChanged == 1 {
 		count := 0
 		enode := ""
-		for i := 0; i < grouplist.count; i++ {
+		for i := 0; i < groupList.count; i++ {
 			count++
-			node := grouplist.Nodes[i]
+			node := groupList.Nodes[i]
 			if enode != "" {
-				enode += Dccpdelimiter
+				enode += XvcDelimiter
 			}
 			e := fmt.Sprintf("enode://%v@%v:%v", node.ID, node.IP, node.UDP)
 			enode += e
 			ipa := &net.UDPAddr{IP: node.IP, Port: int(node.UDP)}
-			go SendToPeer(node.ID, ipa, "")
+			go SendToPeer(node.ID, ipa, "", p2pType)
 			//TODO get and send privatekey slice
 			//go SendMsgToNode(node.ID, ipa, "0xff00ff")
 		}
 		enodes := fmt.Sprintf("%v,%v", count, enode)
-		log.Debug("send group to nodes", "group: ", enodes)
-		go callPrivKeyEvent(enodes)
-		changed = 2
+		log.Info("send group to nodes", "group", p2pType, "enodes", enodes)
+		//go callPrivKeyEvent(enodes) //TODO
+		*groupChanged = 2
 	}
-	return
 }
 
 //send group info
@@ -447,21 +558,21 @@ func SendMsgToNode(toid NodeID, toaddr *net.UDPAddr, msg string) error {
 	return Table4group.net.sendMsgToPeer(toid, toaddr, msg)
 }
 
-func SendToPeer(toid NodeID, toaddr *net.UDPAddr, msg string) error {
+func SendToPeer(toid NodeID, toaddr *net.UDPAddr, msg string, p2pType int) error {
 	log.Debug("==== SendToPeer() ====\n")
 	log.Debug("msg: %v\n", msg)
-	return Table4group.net.sendToPeer(toid, toaddr, msg)
+	return Table4group.net.sendToPeer(toid, toaddr, msg, p2pType)
 }
-func (t *udp) sendToPeer(toid NodeID, toaddr *net.UDPAddr, msg string) error {
+func (t *udp) sendToPeer(toid NodeID, toaddr *net.UDPAddr, msg string, p2pType int) error {
 	log.Debug("====  (t *udp) sendToPeer()  ====")
-	req := getGroupInfo()
+	req := getGroupInfo(p2pType)
 	if req == nil {
 		return nil
 	}
-	errc := t.pending(toid, DccpGroupPacket, func(r interface{}) bool {
+	errc := t.pending(toid, byte(Dccp_groupInfoPacket), func(r interface{}) bool {
 		return true
 	})
-	t.send(toaddr, DccpGroupPacket, req)
+	t.send(toaddr, byte(Dccp_groupInfoPacket), req)
 	err := <-errc
 	return err
 }
@@ -471,7 +582,7 @@ func (req *groupmessage) handle(t *udp, from *net.UDPAddr, fromID NodeID, mac []
 	if expired(req.Expiration) {
 		return errExpired
 	}
-	log.Debug("req: %+v\n", req)
+	log.Debug("groupmessage", "req", req)
 	nodes := make([]*Node, 0, bucketSize)
 	for _, rn := range req.Nodes {
 		n, err := t.nodeFromRPC(from, rn)
@@ -483,14 +594,13 @@ func (req *groupmessage) handle(t *udp, from *net.UDPAddr, fromID NodeID, mac []
 	}
 
 	log.Debug("group msg handle", "req.Nodes: ", nodes)
-	go callGroupEvent(nodes)
+	go callGroupEvent(nodes, int(req.P2pType))
 	return nil
 }
 
 //send msg
 func (t *udp) sendMsgToPeer(toid NodeID, toaddr *net.UDPAddr, msg string) error {
 	log.Debug("====  (t *udp) sendMsgToPeer()  ====")
-	//TODO
 	errc := t.pending(toid, PeerMsgPacket, func(r interface{}) bool {
 		return true
 	})
@@ -509,34 +619,48 @@ func (req *message) handle(t *udp, from *net.UDPAddr, fromID NodeID, mac []byte)
 	if expired(req.Expiration) {
 		return errExpired
 	}
-	go callMsgEvent(req.Msg)
+	go callPriKeyEvent(req.Msg)
 	return nil
 }
 
-var groupcallback func(interface{})
+var groupcallback func(interface{}, int)
 
-func RegisterGroupCallback(callbackfunc func(interface{})) {
+func RegisterGroupCallback(callbackfunc func(interface{}, int)) {
 	groupcallback = callbackfunc
 }
 
-func callGroupEvent(n []*Node) {
-	groupcallback(n)
+func callGroupEvent(n []*Node, p2pType int) {
+	groupcallback(n, p2pType)
 }
 
-var msgcallback func(interface{})
+var prikeycallback func(interface{})
 
-func RegistermsgCallback(callbackfunc func(interface{})) {
-	msgcallback = callbackfunc
+func RegisterPriKeyCallback(callbackfunc func(interface{})) {
+	prikeycallback = callbackfunc
 }
 
-func callMsgEvent(msg string) {
-	msgcallback(msg)
+func callPriKeyEvent(msg string) {
+	prikeycallback(msg)
 }
+
+func callMsgEvent(e interface{}, p2pType int) <-chan string {
+	switch (p2pType) {
+	case Dccprotocol_type:
+		return dccpcallback(e)
+	case Xprotocol_type:
+		return xpcallback(e)
+	}
+	ch := make(chan string)
+	ch <- "p2pType invalid"
+	return ch
+}
+
+
 
 //peer(of DCCP group) receive other peer msg to run dccp
 var dccpcallback func(interface{}) <-chan string
 
-func RegisterDccpCallback(callbackfunc func(interface{}) <-chan string) {
+func RegisterDccpMsgCallback(callbackfunc func(interface{}) <-chan string) {
 	dccpcallback = callbackfunc
 }
 func calldccpEvent(e interface{}) <-chan string {
@@ -546,12 +670,40 @@ func calldccpEvent(e interface{}) <-chan string {
 //return
 var dccpretcallback func(interface{})
 
-func RegisterDccpRetCallback(callbackfunc func(interface{})) {
+func RegisterDccpMsgRetCallback(callbackfunc func(interface{})) {
 	dccpretcallback = callbackfunc
 }
 func calldccpReturn(e interface{}) {
-	log.Debug("calldccpReturn", "args", e)
 	dccpretcallback(e)
+}
+
+//peer(of Xp group) receive other peer msg to run dccp
+var xpcallback func(interface{}) <-chan string
+
+func RegisterXpMsgCallback(callbackfunc func(interface{}) <-chan string) {
+	xpcallback = callbackfunc
+}
+func callxpEvent(e interface{}) <-chan string {
+	return xpcallback(e)
+}
+
+//return
+var xpretcallback func(interface{})
+
+func RegisterXpMsgRetCallback(callbackfunc func(interface{})) {
+	xpretcallback = callbackfunc
+}
+func callxpReturn(e interface{}) {
+	xpretcallback(e)
+}
+
+func callXvcReturn(e interface{}, p2pType int) {
+	switch (p2pType) {
+	case Dccprotocol_type:
+		calldccpReturn(e)
+	case Xprotocol_type:
+		callxpReturn(e)
+	}
 }
 
 //get private Key
@@ -570,7 +722,7 @@ func ParseNodes(n []*Node) (int, string) {
 	enode := ""
 	for _, e := range n {
 		if enode != "" {
-			enode += Dccpdelimiter
+			enode += XvcDelimiter
 		}
 		i++
 		enode += e.String()

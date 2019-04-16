@@ -322,11 +322,11 @@ func (api *PublicAdminAPI) Peers() ([]*p2p.PeerInfo, error) {
 
 // Group retrieves all the nodes of group
 func (api *PublicAdminAPI) DccpGroup() (*p2p.EnodeInfo, error) {
-	count, str := layer2.GetGroup()
+	count, str := layer2.Dccprotocol_getGroup()
 	if count == 0 {
 		return nil, nil
 	}
-	enode := p2p.EnodeInfo{Num: count, Enode: strings.Split(str, discover.Dccpdelimiter)}
+	enode := p2p.EnodeInfo{Num: count, Enode: strings.Split(str, discover.XvcDelimiter)}
 	return &enode, nil
 }
 

@@ -13,7 +13,7 @@ import (
 	"github.com/xvalue/go-xvalue/xvalue/dccp/ec2/paillier"
 	"github.com/xvalue/go-xvalue/xvalue/dccp/ec2/commit"
 	"github.com/xvalue/go-xvalue/xvalue/dccp/ec2/vss"
-	p2pdccp "github.com/xvalue/go-xvalue/xvalue/layer2"
+	"github.com/xvalue/go-xvalue/xvalue/layer2"
 	"github.com/xvalue/go-xvalue/p2p/discover"
 	"os"
 	"github.com/xvalue/go-xvalue/common"
@@ -759,7 +759,7 @@ func SendReqToGroup(msg string,rpctype string) (string,error) {
 }
 
 func SendMsgToDccpGroup(msg string) {
-    p2pdccp.SendMsg(msg)
+    layer2.SendMsg(msg)
 }
 
 ///////////////////////////////////////
@@ -797,7 +797,7 @@ func (self *RecvMsg) Run(workid int,ch chan interface{}) bool {
 	    log.Debug(cherr.Error())
 	    msg := prex + sep + "fail" + msgtypesep + "rpc_req_dccpaddr_res"
 	    types.SetDccpRpcResData(prex,msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    go func(s string) {
 		 time.Sleep(time.Duration(200)*time.Second) //1000 == 1s
 		 types.DeleteDccpRpcMsgData(s)
@@ -808,7 +808,7 @@ func (self *RecvMsg) Run(workid int,ch chan interface{}) bool {
 	}
 	msg := prex + sep + ret + msgtypesep + "rpc_req_dccpaddr_res"
 	types.SetDccpRpcResData(prex,msg)
-	p2pdccp.Broadcast(msg)
+	layer2.Broadcast(msg)
 	go func(s string) {
 	     time.Sleep(time.Duration(200)*time.Second) //1000 == 1s
 	     types.DeleteDccpRpcMsgData(s)
@@ -828,7 +828,7 @@ func (self *RecvMsg) Run(workid int,ch chan interface{}) bool {
 	    log.Debug(cherr.Error())
 	    msg := prex + sep + "fail" + msgtypesep + "rpc_confirm_dccpaddr_res"
 	    types.SetDccpRpcResData(prex,msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    go func(s string) {
 		 time.Sleep(time.Duration(200)*time.Second) //1000 == 1s
 		 types.DeleteDccpRpcMsgData(s)
@@ -839,7 +839,7 @@ func (self *RecvMsg) Run(workid int,ch chan interface{}) bool {
 	}
 	msg := prex + sep + ret + msgtypesep + "rpc_confirm_dccpaddr_res"
 	types.SetDccpRpcResData(prex,msg)
-	p2pdccp.Broadcast(msg)
+	layer2.Broadcast(msg)
 	go func(s string) {
 	     time.Sleep(time.Duration(200)*time.Second) //1000 == 1s
 	     types.DeleteDccpRpcMsgData(s)
@@ -859,7 +859,7 @@ func (self *RecvMsg) Run(workid int,ch chan interface{}) bool {
 	    log.Debug(cherr.Error())
 	    msg := prex + sep + "fail" + msgtypesep + "rpc_lockin_res"
 	    types.SetDccpRpcResData(prex,msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    go func(s string) {
 		 time.Sleep(time.Duration(200)*time.Second) //1000 == 1s
 		 types.DeleteDccpRpcMsgData(s)
@@ -870,7 +870,7 @@ func (self *RecvMsg) Run(workid int,ch chan interface{}) bool {
 	}
 	msg := prex + sep + ret + msgtypesep + "rpc_lockin_res"
 	types.SetDccpRpcResData(prex,msg)
-	p2pdccp.Broadcast(msg)
+	layer2.Broadcast(msg)
 	go func(s string) {
 	     time.Sleep(time.Duration(200)*time.Second) //1000 == 1s
 	     types.DeleteDccpRpcMsgData(s)
@@ -891,7 +891,7 @@ func (self *RecvMsg) Run(workid int,ch chan interface{}) bool {
 	    types.SetDccpValidateData(mmm[1],val)
 	    msg := prex + sep + val + msgtypesep + "rpc_lockout_res"
 	    types.SetDccpRpcResData(prex,msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    go func(s string) {
 		 time.Sleep(time.Duration(500)*time.Second) //1000 == 1s
 		 types.DeleteDccpRpcMsgData(s)
@@ -906,7 +906,7 @@ func (self *RecvMsg) Run(workid int,ch chan interface{}) bool {
 	    log.Debug("============get real xvalue/dccp from fail.===========")
 	    msg := prex + sep + "fail" + msgtypesep + "rpc_lockout_res"
 	    types.SetDccpRpcResData(prex,msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    go func(s string) {
 		 time.Sleep(time.Duration(500)*time.Second) //1000 == 1s
 		 types.DeleteDccpRpcMsgData(s)
@@ -920,7 +920,7 @@ func (self *RecvMsg) Run(workid int,ch chan interface{}) bool {
 	    log.Debug("============validate real xvalue from fail.===========")
 	    msg := prex + sep + "fail" + msgtypesep + "rpc_lockout_res"
 	    types.SetDccpRpcResData(prex,msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    go func(s string) {
 		 time.Sleep(time.Duration(500)*time.Second) //1000 == 1s
 		 types.DeleteDccpRpcMsgData(s)
@@ -933,7 +933,7 @@ func (self *RecvMsg) Run(workid int,ch chan interface{}) bool {
 	    log.Debug("============validate real dccp from fail.===========")
 	    msg := prex + sep + "fail" + msgtypesep + "rpc_lockout_res"
 	    types.SetDccpRpcResData(prex,msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    go func(s string) {
 		 time.Sleep(time.Duration(500)*time.Second) //1000 == 1s
 		 types.DeleteDccpRpcMsgData(s)
@@ -949,7 +949,7 @@ func (self *RecvMsg) Run(workid int,ch chan interface{}) bool {
 	    log.Debug(cherr.Error())
 	    msg := prex + sep + "fail" + msgtypesep + "rpc_lockout_res"
 	    types.SetDccpRpcResData(prex,msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    go func(s string) {
 		 time.Sleep(time.Duration(500)*time.Second) //1000 == 1s
 		 types.DeleteDccpRpcMsgData(s)
@@ -960,7 +960,7 @@ func (self *RecvMsg) Run(workid int,ch chan interface{}) bool {
 	}
 	msg := prex + sep + ret + msgtypesep + "rpc_lockout_res"
 	types.SetDccpRpcResData(prex,msg)
-	p2pdccp.Broadcast(msg)
+	layer2.Broadcast(msg)
 	go func(s string) {
 	     time.Sleep(time.Duration(500)*time.Second) //1000 == 1s
 	     types.DeleteDccpRpcMsgData(s)
@@ -994,7 +994,7 @@ func (self *ReqAddrSendMsgToDccp) Run(workid int,ch chan interface{}) bool {
     msg := prex + sep + self.XValueaddr + sep + self.Pub + sep + self.Cointype + msgtypesep + "rpc_req_dccpaddr"
     types.SetDccpRpcMsgData(prex,msg)
     log.Debug("ReqAddrSendMsgToDccp.Run","broatcast rpc msg",msg)
-    p2pdccp.Broadcast(msg)
+    layer2.Broadcast(msg)
 
     go func(s string) {
 	 time.Sleep(time.Duration(200)*time.Second) //1000 == 1s
@@ -1064,7 +1064,7 @@ func (self *ConfirmAddrSendMsgToDccp) Run(workid int,ch chan interface{}) bool {
     msg := prex + sep + self.Txhash + sep + self.Tx + sep + self.XValueAddr + sep + self.DccpAddr + sep + self.Hashkey + sep + self.Cointype + msgtypesep + "rpc_confirm_dccpaddr"
     types.SetDccpRpcMsgData(prex,msg)
     log.Debug("ConfirmAddrSendMsgToDccp.Run","broatcast rpc msg",msg)
-    p2pdccp.Broadcast(msg)
+    layer2.Broadcast(msg)
 
     go func(s string) {
 	 time.Sleep(time.Duration(200)*time.Second) //1000 == 1s
@@ -1137,7 +1137,7 @@ func (self *LockInSendMsgToDccp) Run(workid int,ch chan interface{}) bool {
     msg := prex + sep + self.Txhash + sep + self.Tx + sep + self.XValueaddr + sep + self.Hashkey + sep + self.Value + sep + self.Cointype + sep + self.LockinAddr + sep + self.RealDccpFrom + msgtypesep + "rpc_lockin"
     types.SetDccpRpcMsgData(prex,msg)
     log.Debug("LockInSendMsgToDccp.Run","broacast rpc msg",msg)
-    p2pdccp.Broadcast(msg)
+    layer2.Broadcast(msg)
 
     go func(s string) {
 	 time.Sleep(time.Duration(200)*time.Second) //1000 == 1s
@@ -1212,7 +1212,7 @@ func (self *LockoutSendMsgToDccp) Run(workid int,ch chan interface{}) bool {
     log.Debug("LockOutSendMsgToDccp.Run","prex",prex)
     types.SetDccpRpcMsgData(prex,msg)
     log.Debug("LockOutSendMsgToDccp.Run","broacast rpc msg",msg)
-    p2pdccp.Broadcast(msg)
+    layer2.Broadcast(msg)
 
     go func(s string) {
 	 time.Sleep(time.Duration(500)*time.Second) //1000 == 1s
@@ -1542,8 +1542,8 @@ func (w RpcReqWorker) Stop() {
 
 func init(){
 	discover.RegisterSendCallback(DispenseSplitPrivKey)
-	p2pdccp.RegisterRecvCallback(call)
-	p2pdccp.RegisterCallback(call)
+	layer2.Dccprotocol_registerPriKeyCallback(call)
+	layer2.Dccprotocol_registerCallback(call)
 	
 	glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
 	log.Root().SetHandler(glogger)
@@ -1563,7 +1563,7 @@ var parts = make(map[int]string)
 func receiveSplitKey(msg interface{}){
 	log.Debug("==========receiveSplitKey==========")
 	log.Debug("","get msg", msg)
-	cur_enode = p2pdccp.GetSelfID().String()
+	cur_enode = layer2.GetSelfID().String()
 	log.Debug("","cur_enode", cur_enode)
 	head := strings.Split(msg.(string), ":")[0]
 	body := strings.Split(msg.(string), ":")[1]
@@ -1579,7 +1579,7 @@ func receiveSplitKey(msg interface{}){
 		for i := 1; i <= total; i++ {
 			c += parts[i]
 		}
-		peerscount, _ := p2pdccp.GetGroup()
+		peerscount, _ := layer2.Dccprotocol_getGroup()
 		Init(tmp2,c,peerscount)
 	}
 }
@@ -2427,7 +2427,7 @@ type SendRawTxRes struct {
 }
 
 func IsInGroup() bool {
-    cnt,enode := p2pdccp.GetGroup()
+    cnt,enode := layer2.Dccprotocol_getGroup()
     if cnt <= 0 || enode == "" {
 	return false
     }
@@ -2465,9 +2465,9 @@ func Validate_Txhash(wr WorkReq) (string,error) {
 //###############
 
 func GetEnodesInfo() {
-    enode_cnts,_ = p2pdccp.GetEnodes()
+    enode_cnts,_ = layer2.Dccprotocol_getEnodes()
     NodeCnt = enode_cnts
-    cur_enode = p2pdccp.GetSelfID().String()
+    cur_enode = layer2.GetSelfID().String()
 }
 
 //error type 1
@@ -3031,7 +3031,7 @@ func SetUpMsgList(msg string) {
 	    
 	    types.SetDccpRpcMsgData(prex,msg)
 	    log.Debug("SetUpMsgList","broatcast rpc msg",msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    if !IsInGroup() {
 		go func(s string) {
 		     time.Sleep(time.Duration(200)*time.Second) //1000 == 1s
@@ -3051,7 +3051,7 @@ func SetUpMsgList(msg string) {
 	    }
 	    types.SetDccpRpcResData(prex,msg)
 	    log.Debug("SetUpMsgList","broatcast rpc res msg",msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    prexs := strings.Split(prex,"-")
 	    if prexs[0] == cur_enode {
 		wid,ok := types.GetDccpRpcWorkersDataKReady(prex)
@@ -3089,7 +3089,7 @@ func SetUpMsgList(msg string) {
 	    
 	    types.SetDccpRpcMsgData(prex,msg)
 	    log.Debug("SetUpMsgList","broatcast rpc msg",msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    if !IsInGroup() {
 		go func(s string) {
 		     time.Sleep(time.Duration(200)*time.Second) //1000 == 1s
@@ -3109,7 +3109,7 @@ func SetUpMsgList(msg string) {
 	    }
 	    types.SetDccpRpcResData(prex,msg)
 	    log.Debug("SetUpMsgList","broatcast rpc res msg",msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    prexs := strings.Split(prex,"-")
 	    if prexs[0] == cur_enode {
 		wid,ok := types.GetDccpRpcWorkersDataKReady(prex)
@@ -3147,7 +3147,7 @@ func SetUpMsgList(msg string) {
 	    
 	    types.SetDccpRpcMsgData(prex,msg)
 	    log.Debug("SetUpMsgList","broatcast rpc msg",msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    if !IsInGroup() {
 		go func(s string) {
 		     time.Sleep(time.Duration(200)*time.Second) //1000 == 1s
@@ -3167,7 +3167,7 @@ func SetUpMsgList(msg string) {
 	    }
 	    types.SetDccpRpcResData(prex,msg)
 	    log.Debug("SetUpMsgList","broatcast rpc res msg",msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    prexs := strings.Split(prex,"-")
 	    if prexs[0] == cur_enode {
 		wid,ok := types.GetDccpRpcWorkersDataKReady(prex)
@@ -3205,7 +3205,7 @@ func SetUpMsgList(msg string) {
 	    
 	    types.SetDccpRpcMsgData(prex,msg)
 	    log.Debug("SetUpMsgList","broatcast rpc msg",msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    if !IsInGroup() {
 		log.Debug("========SetUpMsgList,it is not in group.===================")
 		go func(s string) {
@@ -3226,7 +3226,7 @@ func SetUpMsgList(msg string) {
 	    }
 	    types.SetDccpRpcResData(prex,msg)
 	    log.Debug("SetUpMsgList","broatcast rpc res msg",msg)
-	    p2pdccp.Broadcast(msg)
+	    layer2.Broadcast(msg)
 	    prexs := strings.Split(prex,"-")
 	    if prexs[0] == cur_enode {
 		wid,ok := types.GetDccpRpcWorkersDataKReady(prex)
@@ -3402,7 +3402,7 @@ func Verify(r *big.Int,s *big.Int,v int32,message string,pkx *big.Int,pky *big.I
 }
 
 func GetEnodesByUid(uid *big.Int) string {
-    _,nodes := p2pdccp.GetEnodes()
+    _,nodes := layer2.Dccprotocol_getEnodes()
     others := strings.Split(nodes,sep2)
     for _,v := range others {
 	id := DoubleHash(v)
@@ -3430,7 +3430,7 @@ func (s sortableIDSSlice) Swap(i, j int) {
 
 func GetIds() sortableIDSSlice {
     var ids sortableIDSSlice
-    _,nodes := p2pdccp.GetEnodes()
+    _,nodes := layer2.Dccprotocol_getEnodes()
     others := strings.Split(nodes,sep2)
     for _,v := range others {
 	uid := DoubleHash(v)
@@ -3443,7 +3443,7 @@ func GetIds() sortableIDSSlice {
 //ec2
 func KeyGenerate_ec2(msgprex string,ch chan interface{},id int) bool {
     w := workers[id]
-    ns,_ := p2pdccp.GetEnodes()
+    ns,_ := layer2.Dccprotocol_getEnodes()
     if ns != NodeCnt {
 	var ret2 Err
 	ret2.info = "get nodes info error in keygenerate."
@@ -3537,7 +3537,7 @@ func KeyGenerate_ec2(msgprex string,ch chan interface{},id int) bool {
 		s3 := string(v.Share.Bytes()) 
 		ss := enode + sep + s0 + sep + s1 + sep + s2 + sep + s3
 		log.Debug("================kg ec2 round two,send msg,code is SHARE1==================")
-		p2pdccp.SendMsgToPeer(enodes,ss)
+		layer2.Dccprotocol_sendMsgToPeer(enodes,ss)
 		break
 	    }
 	}
@@ -4117,7 +4117,7 @@ func Sign_ec2(msgprex string,save string,message string,tokenType string,pkx *bi
 	    s6 := string(u1u1MtAZK1Proof.S2.Bytes()) 
 	    ss := enode + sep + s0 + sep + s1 + sep + s2 + sep + s3 + sep + s4 + sep + s5 + sep + s6
 	    log.Debug("================sign ec2 round two,send msg,code is MTAZK1PROOF==================")
-	    p2pdccp.SendMsgToPeer(enodes,ss)
+	    layer2.Dccprotocol_sendMsgToPeer(enodes,ss)
 	}
     }
 
@@ -4323,7 +4323,7 @@ func Sign_ec2(msgprex string,save string,message string,tokenType string,pkx *bi
 	///////
 	ss = enode + sep + s0 + sep + s1 + sep + s2 + sep + s3 + sep + s4 + sep + s5 + sep + s6 + sep + s7 + sep + s8 + sep + s9 + sep + s10 + sep + s11
 	log.Debug("================kg ec2 round three,send msg,code is MKG==================")
-	p2pdccp.SendMsgToPeer(enodes,ss)
+	layer2.Dccprotocol_sendMsgToPeer(enodes,ss)
     }
     
     // 2.8
@@ -4369,7 +4369,7 @@ func Sign_ec2(msgprex string,save string,message string,tokenType string,pkx *bi
 
 	ss = enode + sep + s0 + sep + s1 + sep + s2 + sep + s3 + sep + s4 + sep + s5 + sep + s6 + sep + s7 + sep + s8 + sep + s9 + sep + s10 + sep + s11
 	log.Debug("================kg ec2 round four,send msg,code is MKW==================")
-	p2pdccp.SendMsgToPeer(enodes,ss)
+	layer2.Dccprotocol_sendMsgToPeer(enodes,ss)
     }
 
     // 2.9
