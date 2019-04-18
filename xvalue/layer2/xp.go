@@ -18,7 +18,6 @@ package layer2
 
 import (
 	"context"
-	"fmt"
 	"net"
 
 	"github.com/xvalue/go-xvalue/log"
@@ -118,7 +117,6 @@ func (xp *Xp) Protocols() []p2p.Protocol {
 // Start implements node.Service, starting the background data propagation thread
 // of the Whisper protocol.
 func (xp *Xp) Start(server *p2p.Server) error {
-	fmt.Println("==== func (xp *Xp) Start() ====")
 	return nil
 }
 

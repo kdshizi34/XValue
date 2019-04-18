@@ -34,6 +34,7 @@ import (
 	"github.com/xvalue/go-xvalue/common/fdlimit"
 	"github.com/xvalue/go-xvalue/consensus"
 	"github.com/xvalue/go-xvalue/consensus/clique"
+	"github.com/xvalue/go-xvalue/consensus/ccdex"
 	"github.com/xvalue/go-xvalue/consensus/ethash"
 	"github.com/xvalue/go-xvalue/core"
 	"github.com/xvalue/go-xvalue/core/state"
@@ -1319,7 +1320,6 @@ func RegisterShhService(stack *node.Node, cfg *whisper.Config) {
 
 // RegisterDccpService configures Dccp and adds it to the given node.
 func RegisterDccpService(stack *node.Node, cfg *layer2.Config) {
-	fmt.Println("====  RegisterDccpService()  ====")
 	if err := stack.Register(func(n *node.ServiceContext) (node.Service, error) {
 		return layer2.DccpNew(cfg), nil
 	}); err != nil {
@@ -1329,7 +1329,6 @@ func RegisterDccpService(stack *node.Node, cfg *layer2.Config) {
 
 // RegisterXpService configures Xp and adds it to the given node.
 func RegisterXpService(stack *node.Node, cfg *layer2.Config) {
-	fmt.Println("====  RegisterXpService()  ====")
 	if err := stack.Register(func(n *node.ServiceContext) (node.Service, error) {
 		return layer2.XpNew(cfg), nil
 	}); err != nil {
@@ -1415,7 +1414,9 @@ func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chai
 		Fatalf("%v", err)
 	}
 	var engine consensus.Engine
-	if config.Clique != nil {
+	if config.Ccdex != nil {
+		engine = ccdex.New(config.Ccdex, chainDb)
+	} else if config.Clique != nil {
 		engine = clique.New(config.Clique, chainDb)
 	} else {
 		engine = ethash.NewFaker()

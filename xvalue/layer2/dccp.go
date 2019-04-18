@@ -18,7 +18,6 @@ package layer2
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"time"
 
@@ -143,7 +142,6 @@ func recvPrivkeyInfo(msg interface{}) {
 // Start implements node.Service, starting the background data propagation thread
 // of the Whisper protocol.
 func (dccp *Dccp) Start(server *p2p.Server) error {
-	fmt.Println("==== func (dccp *Dccp) Start() ====")
 	return nil
 }
 
